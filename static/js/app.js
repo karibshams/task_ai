@@ -385,3 +385,4 @@ async function runAllUnitTests() {
 function closeTestBanner() {
     document.getElementById("testResultBanner").classList.add("hidden");
 }
+

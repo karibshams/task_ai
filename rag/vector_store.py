@@ -125,3 +125,4 @@ if __name__ == "__main__":
     res2 = store.search("What is the company's employee bonus policy?")
     for r in res2:
         print(f"Score: {r['score']:.3f} | Citation: {r['citation']}")
+

@@ -210,3 +210,4 @@ def get_assistant() -> BusinessAssistant:
     if _assistant_instance is None:
         _assistant_instance = BusinessAssistant()
     return _assistant_instance
+

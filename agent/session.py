@@ -122,3 +122,4 @@ def get_current_session() -> UserSession:
         _session_instance = UserSession()
         _session_instance.login()
     return _session_instance
+

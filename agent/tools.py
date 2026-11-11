@@ -296,3 +296,4 @@ def run_tool(tool_name: str, args: dict) -> dict:
             "code": "UNKNOWN_TOOL",
             "message": f"Tool '{tool_name}' is not recognized."
         }
+

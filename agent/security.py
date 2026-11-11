@@ -80,3 +80,4 @@ def validate_name(name: str) -> tuple[bool, str]:
     if re.search(r"[<>{}\$]", name):
         return False, "Name contains invalid characters."
     return True, name.strip()
+
