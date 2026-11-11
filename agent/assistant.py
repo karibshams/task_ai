@@ -140,8 +140,8 @@ class BusinessAssistant:
             tool_args = func_call.get("args", {})
             call_id = func_call.get("id")
 
-            # Execute tool
-            tool_result = run_tool(tool_name, tool_args)
+            # Execute tool through extensible registry
+            tool_result = run_tool(tool_name, tool_args, session=session)
 
             # Record tool call metadata for UI & testing
             status_label = "SUCCESS" if tool_result.get("success") or tool_result.get("found") else "DENIED" if tool_result.get("code") == "PERMISSION_DENIED" else "ERROR"

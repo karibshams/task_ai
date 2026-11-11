@@ -1,11 +1,21 @@
 import json
+import logging
 import os
 import sys
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 
 # Ensure root directory is in sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config
+
+# Setup structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
+    datefmt="%H:%M:%S"
+)
+logger = logging.getLogger("EnterpriseAssistant.Server")
+
 from agent.assistant import get_assistant
 from agent.session import get_current_session
 from rag.vector_store import get_vector_store
@@ -14,11 +24,11 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = config.SECRET_KEY
 
 # Ensure vector store is initialized at startup
-print("[Startup] Initializing Policy Vector Store...")
+logger.info("Initializing Policy Vector Store...")
 get_vector_store()
 
 # Ensure user session is initialized
-print("[Startup] Initializing Authenticated User Session...")
+logger.info("Initializing Authenticated User Session...")
 session = get_current_session()
 
 # In-memory conversation store for web chat sessions
@@ -28,6 +38,12 @@ chat_histories = {}
 def index():
     """Renders the main Chat Interface."""
     return render_template("index.html")
+
+@app.route("/favicon.ico")
+def favicon():
+    """Returns clean inline SVG favicon to prevent 404s."""
+    svg_icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🤖</text></svg>'
+    return Response(svg_icon, mimetype="image/svg+xml")
 
 @app.route("/api/session", methods=["GET"])
 def get_session_info():
