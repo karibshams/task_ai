@@ -1,0 +1,298 @@
+import json
+import os
+import sys
+import urllib.request
+import urllib.error
+
+# Ensure root directory is in sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import config
+from agent.session import get_current_session
+from agent.security import validate_phone, validate_name
+from rag.vector_store import get_vector_store
+
+# Tool Definitions for Gemini API
+TOOL_DECLARATIONS = [
+    {
+        "name": "get_user_profile",
+        "description": "Retrieve the authenticated user's profile information from the business management system. Use when user asks to see, view, or check their profile.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {}
+        }
+    },
+    {
+        "name": "update_user_profile",
+        "description": "Update specific fields of the authenticated user's profile in the business management system. Only call when user has specified which field (such as phone number, first name, or last name) and its new value.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "phone": {
+                    "type": "STRING",
+                    "description": "The new mobile or cellular phone number (e.g. '01712345678')."
+                },
+                "first_name": {
+                    "type": "STRING",
+                    "description": "The user's updated first name."
+                },
+                "last_name": {
+                    "type": "STRING",
+                    "description": "The user's updated last name."
+                }
+            }
+        }
+    },
+    {
+        "name": "query_policy_knowledge",
+        "description": "Retrieve relevant sections, pricing rules, limits, and requirements from the official Business System Service Management & Creation Policy (SRV-POL-001). Use this whenever answering questions about service creation, pricing, permissions, or policies.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "query": {
+                    "type": "STRING",
+                    "description": "The search query or topic to look up in the policy document."
+                }
+            },
+            "required": ["query"]
+        }
+    }
+]
+
+def execute_get_user_profile() -> dict:
+    """
+    Executes GET /profile on the existing business system REST API.
+    Verifies user permissions before execution.
+    """
+    session = get_current_session()
+    
+    # Permission verification
+    if not session.has_permission("profile.view"):
+        return {
+            "success": False,
+            "code": "PERMISSION_DENIED",
+            "message": "Access Denied: You do not have permission 'profile.view' to access user profile information."
+        }
+
+    token = session.get_token()
+    if not token:
+        return {
+            "success": False,
+            "code": "AUTH_ERROR",
+            "message": "Authentication failed. Unable to obtain valid session token."
+        }
+
+    profile_url = f"{config.API_BASE_URL}/profile"
+    req = urllib.request.Request(
+        profile_url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json"
+        }
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("status") is True or data.get("success") is True:
+                raw_data = data.get("data", {})
+                acc_info = raw_data.get("account_info", {})
+                contact_info = raw_data.get("contact_info", {})
+                acc_type = raw_data.get("account_type", {})
+                company_info = raw_data.get("company_info", {})
+                emails = raw_data.get("emails", [])
+                primary_email = emails[0].get("email") if emails else session.email
+
+                clean_profile = {
+                    "id": acc_info.get("account_id"),
+                    "name": acc_info.get("full_name") or f"{acc_info.get('first_name', '')} {acc_info.get('last_name', '')}".strip(),
+                    "first_name": acc_info.get("first_name"),
+                    "last_name": acc_info.get("last_name"),
+                    "email": primary_email,
+                    "phone": contact_info.get("cellular_phone_1") or "Not provided",
+                    "account_type": acc_type.get("type_display", "Standard User"),
+                    "company": company_info.get("limo_company_name", "N/A"),
+                    "status": raw_data.get("settings", {}).get("status_label", "ACTIVE")
+                }
+
+                # Update session user data
+                if session.user_data:
+                    session.user_data["cellular_phone_1"] = clean_profile["phone"]
+                    session.user_data["first_name"] = clean_profile["first_name"]
+                    session.user_data["last_name"] = clean_profile["last_name"]
+
+                return {
+                    "success": True,
+                    "profile": clean_profile,
+                    "message": "Profile retrieved successfully from business system."
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": data.get("message", "Failed to retrieve profile.")
+                }
+    except Exception as e:
+        return {
+            "success": False,
+            "code": "API_ERROR",
+            "message": f"Failed to connect to profile service: {str(e)}"
+        }
+
+def execute_update_user_profile(phone: str = None, first_name: str = None, last_name: str = None) -> dict:
+    """
+    Executes PUT /profile on the existing business system REST API.
+    Strictly verifies 'profile.update' permission and validates input before executing.
+    """
+    session = get_current_session()
+
+    # Step 1: Check required information
+    if not phone and not first_name and not last_name:
+        return {
+            "success": False,
+            "code": "MISSING_INFO",
+            "message": "Missing required information: Please specify which profile field you want to update (e.g. phone number, first name, last name) along with the new value."
+        }
+
+    # Step 2: Validate input fields
+    api_payload = {}
+    if phone:
+        valid, cleaned_phone = validate_phone(phone)
+        if not valid:
+            return {
+                "success": False,
+                "code": "VALIDATION_ERROR",
+                "message": cleaned_phone
+            }
+        api_payload["cellular_phone_1"] = cleaned_phone
+
+    if first_name:
+        valid, cleaned_fn = validate_name(first_name)
+        if not valid:
+            return {"success": False, "code": "VALIDATION_ERROR", "message": cleaned_fn}
+        api_payload["first_name"] = cleaned_fn
+
+    if last_name:
+        valid, cleaned_ln = validate_name(last_name)
+        if not valid:
+            return {"success": False, "code": "VALIDATION_ERROR", "message": cleaned_ln}
+        api_payload["last_name"] = cleaned_ln
+
+    # Step 3: Authorization Check (CRITICAL SECURITY CONTROL)
+    # The application layer MUST enforce permission check before executing the API.
+    if not session.has_permission("profile.update"):
+        return {
+            "success": False,
+            "code": "PERMISSION_DENIED",
+            "message": "Access Denied: You do not possess the required 'profile.update' permission to modify user profile details. The Update Profile API was NOT executed, and no changes were made."
+        }
+
+    # Step 4: Execute API Call
+    token = session.get_token()
+    if not token:
+        return {
+            "success": False,
+            "code": "AUTH_ERROR",
+            "message": "Authentication failed. Unable to obtain valid session token."
+        }
+
+    profile_url = f"{config.API_BASE_URL}/profile"
+    req_body = json.dumps(api_payload).encode("utf-8")
+    req = urllib.request.Request(
+        profile_url,
+        data=req_body,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
+        method="PUT"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("status") is True or data.get("success") is True:
+                # Update session phone or name
+                if "cellular_phone_1" in api_payload and session.user_data:
+                    session.user_data["cellular_phone_1"] = api_payload["cellular_phone_1"]
+
+                return {
+                    "success": True,
+                    "message": "Profile updated successfully.",
+                    "updated_fields": api_payload,
+                    "api_response": data.get("message", "Profile updated.")
+                }
+            else:
+                return {
+                    "success": False,
+                    "code": "API_REJECTED",
+                    "message": data.get("message", "Failed to update profile.")
+                }
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8") if hasattr(e, "read") else str(e)
+        return {
+            "success": False,
+            "code": f"HTTP_{e.code}",
+            "message": f"API error ({e.code}): {error_body}"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "code": "API_ERROR",
+            "message": f"Failed to execute profile update API: {str(e)}"
+        }
+
+def execute_query_policy(query: str) -> dict:
+    """
+    Retrieves policy clauses and sections from the vector store for a given query.
+    """
+    store = get_vector_store()
+    results = store.search(query, top_k=3)
+    
+    if not results:
+        return {
+            "found": False,
+            "message": "No relevant policy information found in the service policy document.",
+            "citations": []
+        }
+
+    # Format snippets
+    snippets = []
+    citations = []
+    for r in results:
+        citations.append(r["citation"])
+        snippets.append({
+            "citation": r["citation"],
+            "title": r["title"],
+            "section": r["section"],
+            "page": r["page"],
+            "content": r["content"],
+            "similarity_score": round(r["score"], 3)
+        })
+
+    return {
+        "found": True,
+        "results": snippets,
+        "citations": citations
+    }
+
+def run_tool(tool_name: str, args: dict) -> dict:
+    """
+    Unified tool dispatcher.
+    """
+    print(f"[ToolDispatcher] Executing '{tool_name}' with args: {args}")
+    if tool_name == "get_user_profile":
+        return execute_get_user_profile()
+    elif tool_name == "update_user_profile":
+        return execute_update_user_profile(
+            phone=args.get("phone"),
+            first_name=args.get("first_name"),
+            last_name=args.get("last_name")
+        )
+    elif tool_name == "query_policy_knowledge":
+        return execute_query_policy(query=args.get("query", ""))
+    else:
+        return {
+            "success": False,
+            "code": "UNKNOWN_TOOL",
+            "message": f"Tool '{tool_name}' is not recognized."
+        }
