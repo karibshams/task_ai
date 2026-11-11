@@ -330,7 +330,7 @@
             msg.className = `message ${sender}`;
             const avatar = document.createElement("div");
             avatar.className = "avatar";
-            avatar.textContent = sender === "user" ? "👤" : "🤖";
+            avatar.textContent = sender === "user" ? "👤" : "CHAT_AI";
             const bubble = document.createElement("div");
             bubble.className = "bubble";
             bubble.innerHTML = `<div class="bubble-header"><span>${sender === "user" ? "You" : "Assistant"}</span><span>${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div>`;

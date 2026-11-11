@@ -9,10 +9,8 @@ import urllib.error
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, Response
 
-# Load environment variables
 load_dotenv()
 
-# Logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("BusinessAssistant")
 
@@ -28,9 +26,7 @@ DEFAULT_USER_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD", "Test?123")
 DEFAULT_USER_COMPANY = os.getenv("DEFAULT_USER_COMPANY", "limoground2")
 POLICY_INDEX_PATH = os.path.join(BASE_DIR, "policy_index.json")
 
-# ===========================================================================
-# 1. User Session & API Authentication
-# ===========================================================================
+
 class UserSession:
     def __init__(self):
         self.email = DEFAULT_USER_EMAIL
