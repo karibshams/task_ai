@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,8 +8,11 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <div class="app-layout">
         <!-- Sidebar -->
@@ -49,13 +53,15 @@
                     </div>
                     <div class="perm-item">
                         <label>
-                            <input type="checkbox" id="permUpdate" checked onchange="togglePermission('profile.update', this.checked)">
+                            <input type="checkbox" id="permUpdate" checked
+                                onchange="togglePermission('profile.update', this.checked)">
                             <span>profile.update</span>
                         </label>
                         <span class="badge" id="permUpdateBadge">Granted</span>
                     </div>
                     <div class="perm-hint">
-                        💡 <em>Toggle <code>profile.update</code> to simulate Authorized (Scenario 04) vs Unauthorized (Scenario 05) states.</em>
+                        💡 <em>Toggle <code>profile.update</code> to simulate Authorized (Scenario 04) vs Unauthorized
+                            (Scenario 05) states.</em>
                     </div>
                 </div>
             </div>
@@ -122,10 +128,10 @@
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-secondary" onclick="runAllUnitTests()" id="btnRunTests">
-                        🧪 Run All 7 Unit Tests
+                        Run All 7 Unit Tests
                     </button>
                     <button class="btn btn-ghost" onclick="clearChat()">
-                        🗑️ Clear Chat
+                        Clear Chat
                     </button>
                 </div>
             </header>
@@ -150,11 +156,15 @@
                             <span class="timestamp">Just now</span>
                         </div>
                         <div class="bubble-content">
-                            <p>Hello! I am your <strong>Enterprise AI Business Assistant</strong>. I am integrated with your business management system to help you with:</p>
+                            <p>Hello! I am your <strong>Enterprise AI Business Assistant</strong>. I am integrated with
+                                your business management system to help you with:</p>
                             <ul>
-                                <li><strong>Policy Inquiries (RAG):</strong> Ask questions about service creation, pricing rules, limits, and workflows governed by <em>Policy SRV-POL-001</em>.</li>
-                                <li><strong>Profile Operations (Agentic AI):</strong> Retrieve your profile details or update contact numbers directly via verified REST APIs.</li>
-                                <li><strong>Security & RBAC Enforcement:</strong> All operations strictly verify your permissions and protect corporate credentials.</li>
+                                <li><strong>Policy Inquiries (RAG):</strong> Ask questions about service creation,
+                                    pricing rules, limits, and workflows governed by <em>Policy SRV-POL-001</em>.</li>
+                                <li><strong>Profile Operations (Agentic AI):</strong> Retrieve your profile details or
+                                    update contact numbers directly via verified REST APIs.</li>
+                                <li><strong>Security & RBAC Enforcement:</strong> All operations strictly verify your
+                                    permissions and protect corporate credentials.</li>
                             </ul>
                             <p>Try asking a question or use the <strong>Test Scenarios</strong> in the left sidebar!</p>
                         </div>
@@ -174,15 +184,14 @@
             <footer class="chat-input-area">
                 <form id="chatForm" onsubmit="handleSendMessage(event)">
                     <div class="input-wrapper">
-                        <textarea 
-                            id="messageInput" 
+                        <textarea id="messageInput"
                             placeholder="Ask a policy question or request profile operations... (e.g., 'What is the maximum service price?' or 'Show me my profile')"
-                            rows="1"
-                            onkeydown="handleKeyDown(event)"></textarea>
+                            rows="1" onkeydown="handleKeyDown(event)"></textarea>
                         <button type="submit" class="btn btn-primary" id="btnSend">
                             <span>Send</span>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
                             </svg>
                         </button>
                     </div>
@@ -193,5 +202,5 @@
 
     <script src="/static/js/app.js"></script>
 </body>
-</html>
 
+</html>

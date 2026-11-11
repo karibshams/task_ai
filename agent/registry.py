@@ -95,3 +95,4 @@ class ToolRegistry:
 
 # Global tool registry singleton
 registry = ToolRegistry()
+
