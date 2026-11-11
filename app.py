@@ -217,8 +217,8 @@ def execute_get_user_profile() -> dict:
     except Exception as e:
         return {"success": False, "code": "API_ERROR", "message": str(e)}
 
-def execute_update_user_profile(phone: str = None, first_name: str = None, last_name: str = None) -> dict:
-    if not phone and not first_name and not last_name:
+def execute_update_user_profile(phone: str = None, name: str = None, first_name: str = None, last_name: str = None) -> dict:
+    if not phone and not name and not first_name and not last_name:
         return {
             "success": False,
             "code": "MISSING_INFO",
@@ -240,6 +240,8 @@ def execute_update_user_profile(phone: str = None, first_name: str = None, last_
             return {"success": False, "code": "VALIDATION_ERROR", "message": f"Invalid phone format '{phone}'."}
         payload["cellular_phone_1"] = cleaned_phone
 
+    if name:
+        payload["name"] = name.strip()
     if first_name:
         payload["first_name"] = first_name.strip()
     if last_name:
@@ -291,6 +293,7 @@ TOOL_DECLARATIONS = [
             "type": "OBJECT",
             "properties": {
                 "phone": {"type": "STRING", "description": "New phone number, e.g. '01712345678' or '+15551234567'"},
+                "name": {"type": "STRING", "description": "New or updated full name, e.g. 'Jane Updated'"},
                 "first_name": {"type": "STRING", "description": "Updated first name"},
                 "last_name": {"type": "STRING", "description": "Updated last name"}
             }
